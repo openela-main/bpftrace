@@ -1,0 +1,82 @@
+From 7e813d0e3048f52781199384a120f5e5cbad22ae Mon Sep 17 00:00:00 2001
+From: Viktor Malik <viktor.malik@gmail.com>
+Date: Mon, 5 Dec 2022 13:31:25 +0100
+Subject: [PATCH] RHEL8: remove not existing attachpoints from tools
+
+tools/bio* attempt to attach each probe to multiple kprobes to cover all
+possible systems. Remove probes which do not exist in RHEL8 to remove
+unnecessary warnings.
+---
+ tools/biolatency.bt   | 6 ++----
+ tools/biostacks.bt    | 4 +---
+ tools/old/biosnoop.bt | 6 ++----
+ 3 files changed, 5 insertions(+), 11 deletions(-)
+
+diff --git a/tools/biolatency.bt b/tools/biolatency.bt
+index d5af1f29..4ea910b4 100755
+--- a/tools/biolatency.bt
++++ b/tools/biolatency.bt
+@@ -16,14 +16,12 @@ BEGIN
+ 	printf("Tracing block device I/O... Hit Ctrl-C to end.\n");
+ }
+ 
+-kprobe:blk_account_io_start,
+-kprobe:__blk_account_io_start
++kprobe:blk_account_io_start
+ {
+ 	@start[arg0] = nsecs;
+ }
+ 
+-kprobe:blk_account_io_done,
+-kprobe:__blk_account_io_done
++kprobe:blk_account_io_done
+ /@start[arg0]/
+ {
+ 	@usecs = hist((nsecs - @start[arg0]) / 1000);
+diff --git a/tools/biostacks.bt b/tools/biostacks.bt
+index 1bc9f819..80d8cb9e 100755
+--- a/tools/biostacks.bt
++++ b/tools/biostacks.bt
+@@ -18,14 +18,12 @@ BEGIN
+ 	printf("Tracing block I/O with init stacks. Hit Ctrl-C to end.\n");
+ }
+ 
+-kprobe:blk_account_io_start,
+-kprobe:__blk_account_io_start
++kprobe:blk_account_io_start
+ {
+ 	@reqstack[arg0] = kstack;
+ 	@reqts[arg0] = nsecs;
+ }
+ 
+-kprobe:blk_start_request,
+ kprobe:blk_mq_start_request
+ /@reqts[arg0]/
+ {
+diff --git a/tools/old/biosnoop.bt b/tools/old/biosnoop.bt
+index 1a99643a..327251e3 100755
+--- a/tools/old/biosnoop.bt
++++ b/tools/old/biosnoop.bt
+@@ -22,8 +22,7 @@ BEGIN
+ 	printf("%-12s %-7s %-16s %-6s %7s\n", "TIME(ms)", "DISK", "COMM", "PID", "LAT(ms)");
+ }
+ 
+-kprobe:blk_account_io_start,
+-kprobe:__blk_account_io_start
++kprobe:blk_account_io_start
+ {
+ 	@start[arg0] = nsecs;
+ 	@iopid[arg0] = pid;
+@@ -31,8 +30,7 @@ kprobe:__blk_account_io_start
+ 	@disk[arg0] = ((struct request *)arg0)->rq_disk->disk_name;
+ }
+ 
+-kprobe:blk_account_io_done,
+-kprobe:__blk_account_io_done
++kprobe:blk_account_io_done
+ /@start[arg0] != 0 && @iopid[arg0] != 0 && @iocomm[arg0] != ""/
+ 
+ {
+-- 
+2.38.1
+
