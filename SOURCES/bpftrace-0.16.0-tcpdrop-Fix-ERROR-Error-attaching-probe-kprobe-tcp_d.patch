@@ -1,0 +1,174 @@
+From 652562eef0d53649cf29c256bc20abdffdd195ab Mon Sep 17 00:00:00 2001
+From: Rong Tao <rongtao@cestc.cn>
+Date: Sat, 1 Oct 2022 16:15:27 +0800
+Subject: [PATCH 1/2] tcpdrop: Fix: ERROR: Error attaching probe:
+ 'kprobe:tcp_drop'
+
+kernel commit 8fbf195798b5('tcp_drop() is no longer needed.') remove
+the kprobe:tcp_drop, bcc commit 16eab39171eb('Add
+tracepoint:skb:kfree_skb if no tcp_drop() kprobe.') already fix this
+problem.
+
+CI old kernel is too old and not support the 'reason' field, move the
+old tools/tcpdrop.bt into tools/old/tcpdrop.bt and set the CI to use
+it.
+
+Since 5.17 support trace_kfree_skb(skb, ..., reason) 'reason' field.
+Since 5.19 remove tcp_drop() function.
+
+ERROR log:
+
+ $ sudo ./tcpdrop.bt
+ ./tcpdrop.bt:49-51: WARNING: tcp_drop is not traceable (either non-existing, inlined, or marked as "notrace"); attaching to it will likely fail
+ Attaching 3 probes...
+ cannot attach kprobe, probe entry may not exist
+ ERROR: Error attaching probe: 'kprobe:tcp_drop'
+
+Link: https://github.com/iovisor/bpftrace/pull/2379
+Signed-off-by: Rong Tao <rongtao@cestc.cn>
+---
+ tools/old/tcpdrop.bt | 85 ++++++++++++++++++++++++++++++++++++++++++++
+ tools/tcpdrop.bt     | 22 ++++++------
+ 2 files changed, 97 insertions(+), 10 deletions(-)
+ create mode 100755 tools/old/tcpdrop.bt
+
+diff --git a/tools/old/tcpdrop.bt b/tools/old/tcpdrop.bt
+new file mode 100755
+index 00000000..685a5f6a
+--- /dev/null
++++ b/tools/old/tcpdrop.bt
+@@ -0,0 +1,85 @@
++#!/usr/bin/env bpftrace
++/*
++ * tcpdrop.bt   Trace TCP kernel-dropped packets/segments.
++ *              For Linux, uses bpftrace and eBPF.
++ *
++ * USAGE: tcpdrop.bt
++ *
++ * This is a bpftrace version of the bcc tool of the same name.
++ * It is limited to ipv4 addresses, and cannot show tcp flags.
++ *
++ * This provides information such as packet details, socket state, and kernel
++ * stack trace for packets/segments that were dropped via tcp_drop().
++
++ * WARNING: this script attaches to the tcp_drop kprobe which is likely inlined
++ *          on newer kernels and not replaced by anything else, therefore
++ *          the script will stop working
++ *
++ * For Linux <= 5.18.
++ *
++ * Copyright (c) 2018 Dale Hamel.
++ * Licensed under the Apache License, Version 2.0 (the "License")
++ *
++ * 23-Nov-2018	Dale Hamel	created this.
++ */
++
++#ifndef BPFTRACE_HAVE_BTF
++#include <linux/socket.h>
++#include <net/sock.h>
++#else
++#include <sys/socket.h>
++#endif
++
++BEGIN
++{
++  printf("Tracing tcp drops. Hit Ctrl-C to end.\n");
++  printf("%-8s %-8s %-16s %-21s %-21s %-8s\n", "TIME", "PID", "COMM", "SADDR:SPORT", "DADDR:DPORT", "STATE");
++
++  // See https://github.com/torvalds/linux/blob/master/include/net/tcp_states.h
++  @tcp_states[1] = "ESTABLISHED";
++  @tcp_states[2] = "SYN_SENT";
++  @tcp_states[3] = "SYN_RECV";
++  @tcp_states[4] = "FIN_WAIT1";
++  @tcp_states[5] = "FIN_WAIT2";
++  @tcp_states[6] = "TIME_WAIT";
++  @tcp_states[7] = "CLOSE";
++  @tcp_states[8] = "CLOSE_WAIT";
++  @tcp_states[9] = "LAST_ACK";
++  @tcp_states[10] = "LISTEN";
++  @tcp_states[11] = "CLOSING";
++  @tcp_states[12] = "NEW_SYN_RECV";
++}
++
++kprobe:tcp_drop
++{
++  $sk = ((struct sock *) arg0);
++  $inet_family = $sk->__sk_common.skc_family;
++
++  if ($inet_family == AF_INET || $inet_family == AF_INET6) {
++    if ($inet_family == AF_INET) {
++      $daddr = ntop($sk->__sk_common.skc_daddr);
++      $saddr = ntop($sk->__sk_common.skc_rcv_saddr);
++    } else {
++      $daddr = ntop($sk->__sk_common.skc_v6_daddr.in6_u.u6_addr8);
++      $saddr = ntop($sk->__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr8);
++    }
++    $lport = $sk->__sk_common.skc_num;
++    $dport = $sk->__sk_common.skc_dport;
++
++    // Destination port is big endian, it must be flipped
++    $dport = bswap($dport);
++
++    $state = $sk->__sk_common.skc_state;
++    $statestr = @tcp_states[$state];
++
++    time("%H:%M:%S ");
++    printf("%-8d %-16s ", pid, comm);
++    printf("%39s:%-6d %39s:%-6d %-10s\n", $saddr, $lport, $daddr, $dport, $statestr);
++    printf("%s\n", kstack);
++  }
++}
++
++END
++{
++  clear(@tcp_states);
++}
+diff --git a/tools/tcpdrop.bt b/tools/tcpdrop.bt
+index 3450a533..bb31107f 100755
+--- a/tools/tcpdrop.bt
++++ b/tools/tcpdrop.bt
+@@ -9,16 +9,15 @@
+  * It is limited to ipv4 addresses, and cannot show tcp flags.
+  *
+  * This provides information such as packet details, socket state, and kernel
+- * stack trace for packets/segments that were dropped via tcp_drop().
+-
+- * WARNING: this script attaches to the tcp_drop kprobe which is likely inlined
+- *          on newer kernels and not replaced by anything else, therefore
+- *          the script will stop working
+-
++ * stack trace for packets/segments that were dropped via kfree_skb.
++ *
++ * For Linux 5.17+ (see tools/old for script for lower versions).
++ *
+  * Copyright (c) 2018 Dale Hamel.
+  * Licensed under the Apache License, Version 2.0 (the "License")
+-
++ *
+  * 23-Nov-2018	Dale Hamel	created this.
++ * 01-Oct-2022	Rong Tao	use tracepoint:skb:kfree_skb
+  */
+ 
+ #ifndef BPFTRACE_HAVE_BTF
+@@ -48,12 +47,15 @@ BEGIN
+   @tcp_states[12] = "NEW_SYN_RECV";
+ }
+ 
+-kprobe:tcp_drop
++tracepoint:skb:kfree_skb
+ {
+-  $sk = ((struct sock *) arg0);
++  $reason = args->reason;
++  $skb = (struct sk_buff *)args->skbaddr;
++  $sk = ((struct sock *) $skb->sk);
+   $inet_family = $sk->__sk_common.skc_family;
+ 
+-  if ($inet_family == AF_INET || $inet_family == AF_INET6) {
++  if ($reason > SKB_DROP_REASON_NOT_SPECIFIED &&
++      ($inet_family == AF_INET || $inet_family == AF_INET6)) {
+     if ($inet_family == AF_INET) {
+       $daddr = ntop($sk->__sk_common.skc_daddr);
+       $saddr = ntop($sk->__sk_common.skc_rcv_saddr);
+-- 
+2.38.1
+
