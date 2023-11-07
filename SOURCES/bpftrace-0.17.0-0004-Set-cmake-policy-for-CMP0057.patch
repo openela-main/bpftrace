@@ -1,0 +1,46 @@
+From 6a1eb84833fd40e9aa49b610089c6ce11f38ba43 Mon Sep 17 00:00:00 2001
+From: Viktor Malik <viktor.malik@gmail.com>
+Date: Wed, 10 May 2023 13:30:59 +0200
+Subject: [PATCH 1/2] Set cmake policy for CMP0057
+
+Building with LLVM16 fails with the error:
+CMake Warning (dev) at /usr/lib/llvm-16/lib/cmake/llvm/LLVM-Config.cmake:230 (if):
+  Policy CMP0057 is not set: Support new IN_LIST if() operator.  Run "cmake
+  --help-policy CMP0057" for policy details.  Use the cmake_policy command to
+  set the policy and suppress this warning.
+
+  IN_LIST will be interpreted as an operator when the policy is set to NEW.
+  Since the policy is not set the OLD behavior will be used.
+Call Stack (most recent call first):
+  cmake/clang_libs.cmake:32 (llvm_map_components_to_libnames)
+  src/cc/CMakeLists.txt:126 (include)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Error at /usr/lib/llvm-16/lib/cmake/llvm/LLVM-Config.cmake:230 (if):
+  if given arguments:
+
+    "engine" "IN_LIST" "link_components"
+
+  Unknown arguments specified
+
+Set cmake policy for CMP0057 explicitly.
+---
+ CMakeLists.txt | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 0a7914f5..045e9d97 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,6 +1,8 @@
+ cmake_minimum_required(VERSION 3.13.0)
+ project(bpftrace)
+ 
++cmake_policy(SET CMP0057 NEW)
++
+ # bpftrace version number components.
+ set(bpftrace_VERSION_MAJOR 0)
+ set(bpftrace_VERSION_MINOR 17)
+-- 
+2.40.1
+

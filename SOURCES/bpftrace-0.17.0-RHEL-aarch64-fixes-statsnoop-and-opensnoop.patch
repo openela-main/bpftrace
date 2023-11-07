@@ -1,0 +1,66 @@
+From b23980e4f6ed33d98f4f09ef25ae17baca215cce Mon Sep 17 00:00:00 2001
+From: Jerome Marchand <jmarchan@redhat.com>
+Date: Thu, 11 Jun 2020 14:56:36 +0200
+Subject: [PATCH 6/6] RHEL: aarch64: fixes statsnoop and opensnoop
+
+On aarch64 the open syscall has been dropped. Only openat remains,
+wich is called by libc open() function.
+
+The state of *stat* syscalls, is a mess. They are several generations
+of the system calls, and not all arches provides all of them. For
+instance, new(l)stat are missing from aarch64.
+
+The only way I can think of fixing thess is RHEL-8 only arch specific
+patches.
+
+Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+---
+ tools/opensnoop.bt | 2 --
+ tools/statsnoop.bt | 8 ++------
+ 2 files changed, 2 insertions(+), 8 deletions(-)
+
+diff --git a/tools/opensnoop.bt b/tools/opensnoop.bt
+index a7de8026..d99db93e 100755
+--- a/tools/opensnoop.bt
++++ b/tools/opensnoop.bt
+@@ -21,13 +21,11 @@ BEGIN
+ 	printf("%-6s %-16s %4s %3s %s\n", "PID", "COMM", "FD", "ERR", "PATH");
+ }
+ 
+-tracepoint:syscalls:sys_enter_open,
+ tracepoint:syscalls:sys_enter_openat
+ {
+ 	@filename[tid] = args->filename;
+ }
+ 
+-tracepoint:syscalls:sys_exit_open,
+ tracepoint:syscalls:sys_exit_openat
+ /@filename[tid]/
+ {
+diff --git a/tools/statsnoop.bt b/tools/statsnoop.bt
+index b2d529e2..f612ea94 100755
+--- a/tools/statsnoop.bt
++++ b/tools/statsnoop.bt
+@@ -30,17 +30,13 @@ tracepoint:syscalls:sys_enter_statfs
+ 	@filename[tid] = args->pathname;
+ }
+ 
+-tracepoint:syscalls:sys_enter_statx,
+-tracepoint:syscalls:sys_enter_newstat,
+-tracepoint:syscalls:sys_enter_newlstat
++tracepoint:syscalls:sys_enter_statx
+ {
+ 	@filename[tid] = args->filename;
+ }
+ 
+ tracepoint:syscalls:sys_exit_statfs,
+-tracepoint:syscalls:sys_exit_statx,
+-tracepoint:syscalls:sys_exit_newstat,
+-tracepoint:syscalls:sys_exit_newlstat
++tracepoint:syscalls:sys_exit_statx
+ /@filename[tid]/
+ {
+ 	$ret = args->ret;
+-- 
+2.35.3
+

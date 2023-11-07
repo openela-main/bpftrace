@@ -1,0 +1,160 @@
+From 79d849a3a0462ab0a33cbf208e27e28d05eab213 Mon Sep 17 00:00:00 2001
+From: Viktor Malik <viktor.malik@gmail.com>
+Date: Fri, 3 Mar 2023 08:28:54 +0100
+Subject: [PATCH 1/2] Parse kernel configuration
+
+In future, it may (and will) be useful to have access to the running
+kernel configuration, e.g. to add config-specific compilation options to
+ClangParser.
+
+This adds and fills a new map BPFtrace::kconfig that maps config options
+to their values. Both the option name and the value are strings. The
+configuration is parsed from one of two sources:
+- /boot/config-$(uname -r)
+- /proc/config.gz
+
+For testing purposes, the config filename may be passed through the
+BPFTRACE_KCONFIG_TEST env variable.
+---
+ src/bpftrace.h  |  1 +
+ src/utils.cpp   | 50 +++++++++++++++++++++++++++++++++++++++++++++++++
+ src/utils.h     | 12 ++++++++++++
+ tests/utils.cpp | 19 +++++++++++++++++++
+ 4 files changed, 82 insertions(+)
+
+diff --git a/src/bpftrace.h b/src/bpftrace.h
+index a6a8c00b..94587bff 100644
+--- a/src/bpftrace.h
++++ b/src/bpftrace.h
+@@ -168,6 +168,7 @@ public:
+   std::map<libbpf::bpf_func_id, location> helper_use_loc_;
+   // mapping traceable functions to modules (or "vmlinux") that they appear in
+   FuncsModulesMap traceable_funcs_;
++  KConfig kconfig;
+   std::vector<std::unique_ptr<AttachedProbe>> attached_probes_;
+ 
+   std::map<std::string, std::unique_ptr<PCAPwriter>> pcap_writers;
+diff --git a/src/utils.cpp b/src/utils.cpp
+index 2d9c6695..54c8f054 100644
+--- a/src/utils.cpp
++++ b/src/utils.cpp
+@@ -28,6 +28,7 @@
+ #include <bcc/bcc_syms.h>
+ #include <bcc/bcc_usdt.h>
+ #include <elf.h>
++#include <zlib.h>
+ 
+ #include <linux/version.h>
+ 
+@@ -178,6 +179,55 @@ StdioSilencer::~StdioSilencer()
+   }
+ }
+ 
++KConfig::KConfig()
++{
++  std::vector<std::string> config_locs;
++
++  // Try to get the config from BPFTRACE_KCONFIG_TEST env
++  // If not set, use the set of default locations
++  const char *path_env = std::getenv("BPFTRACE_KCONFIG_TEST");
++  if (path_env)
++    config_locs = { std::string(path_env) };
++  else
++  {
++    struct utsname utsname;
++    if (uname(&utsname) < 0)
++      return;
++    config_locs = {
++      "/boot/config-" + std::string(utsname.release),
++      "/proc/config.gz",
++    };
++  }
++
++  for (auto &path : config_locs)
++  {
++    // gzopen/gzgets handle both uncompressed and compressed files
++    gzFile file = gzopen(path.c_str(), "r");
++    if (!file)
++      continue;
++
++    char buf[4096];
++    while (gzgets(file, buf, sizeof(buf)))
++    {
++      std::string option(buf);
++      if (option.find("CONFIG_") == 0)
++      {
++        // trim trailing '\n'
++        if (option[option.length() - 1] == '\n')
++          option = option.substr(0, option.length() - 1);
++
++        auto split = option.find("=");
++        if (split == std::string::npos)
++          continue;
++
++        config.emplace(option.substr(0, split), option.substr(split + 1));
++      }
++    }
++    gzclose(file);
++  }
++}
++
++
+ bool get_uint64_env_var(const std::string &str, uint64_t &dest)
+ {
+   if (const char* env_p = std::getenv(str.c_str()))
+diff --git a/src/utils.h b/src/utils.h
+index dccc4504..a76aa161 100644
+--- a/src/utils.h
++++ b/src/utils.h
+@@ -130,6 +130,18 @@ struct DeprecatedName
+ typedef std::unordered_map<std::string, std::unordered_set<std::string>>
+     FuncsModulesMap;
+ 
++struct KConfig
++{
++  KConfig();
++  bool has_value(const std::string &name, const std::string &value) const
++  {
++    auto c = config.find(name);
++    return c != config.end() && c->second == value;
++  }
++
++  std::unordered_map<std::string, std::string> config;
++};
++
+ static std::vector<DeprecatedName> DEPRECATED_LIST =
+ {
+ };
+diff --git a/tests/utils.cpp b/tests/utils.cpp
+index 9ca4ace5..8470745b 100644
+--- a/tests/utils.cpp
++++ b/tests/utils.cpp
+@@ -222,6 +222,25 @@ TEST(utils, get_cgroup_path_in_hierarchy)
+   }
+ }
+ 
++TEST(utils, parse_kconfig)
++{
++  char path[] = "/tmp/configXXXXXX";
++  int fd = mkstemp(path);
++  const std::string config = "# Intro comment\n"
++                             "CONFIG_YES=y\n"
++                             "CONFIG_MOD=m\n"
++                             "CONFIG_VAL=42\n"
++                             "# CONFIG_NO is not set";
++  EXPECT_EQ(write(fd, config.c_str(), config.length()), config.length());
++  setenv("BPFTRACE_KCONFIG_TEST", path, true);
++
++  KConfig kconfig;
++  ASSERT_TRUE(kconfig.has_value("CONFIG_YES", "y"));
++  ASSERT_TRUE(kconfig.has_value("CONFIG_MOD", "m"));
++  ASSERT_TRUE(kconfig.has_value("CONFIG_VAL", "42"));
++  ASSERT_EQ(kconfig.config.find("CONFIG_NO"), kconfig.config.end());
++}
++
+ } // namespace utils
+ } // namespace test
+ } // namespace bpftrace
+-- 
+2.39.2
+
