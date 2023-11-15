@@ -1,0 +1,27 @@
+From 31a42a47b90f97a2a8c2446101c0007cf09288bc Mon Sep 17 00:00:00 2001
+From: Viktor Malik <viktor.malik@gmail.com>
+Date: Mon, 5 Dec 2022 11:57:24 +0100
+Subject: [PATCH] tools/old/mdflush.bt: fix BPFTRACE_HAVE_BTF macro
+
+The correct macro to use is called BPFTRACE_HAVE_BTF, not
+__BPFTRACE_HAVE_BTF.
+---
+ tools/old/mdflush.bt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/old/mdflush.bt b/tools/old/mdflush.bt
+index 921c8f1b..23c7dd51 100755
+--- a/tools/old/mdflush.bt
++++ b/tools/old/mdflush.bt
+@@ -15,7 +15,7 @@
+  * 08-Sep-2018	Brendan Gregg	Created this.
+  */
+ 
+-#ifndef __BPFTRACE_HAVE_BTF
++#ifndef BPFTRACE_HAVE_BTF
+ #include <linux/genhd.h>
+ #include <linux/bio.h>
+ #endif
+-- 
+2.38.1
+
