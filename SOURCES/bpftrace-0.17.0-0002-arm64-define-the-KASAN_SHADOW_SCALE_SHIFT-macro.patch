@@ -1,0 +1,103 @@
+From 29c5d381cd4d36b5e3ce140193729a5a4b97c31e Mon Sep 17 00:00:00 2001
+From: Viktor Malik <viktor.malik@gmail.com>
+Date: Mon, 6 Mar 2023 11:41:27 +0100
+Subject: [PATCH 2/2] arm64: define the KASAN_SHADOW_SCALE_SHIFT macro
+
+arm64 defines this macro from Makefile instead of defining it in a
+header file as is the case for other architectures. Since we're not
+running make, we need to define the macro manually via CFLAGS.
+
+The value definition is taken from kernel's arch/arm64/Makefile and it
+depends on the running kernel configuration.
+
+This fixes the runqlat.bt tcpdrop.bt, and undump.bt tools on
+aarch64+debug kernel which previously failed with:
+
+    # /usr/share/bpftrace/tools/runqlat.bt
+    [...]/source/arch/arm64/include/asm/memory.h:300:9: error: use of undeclared identifier 'KASAN_SHADOW_SCALE_SHIFT'
+    [...]
+---
+ src/main.cpp  |  3 ++-
+ src/utils.cpp | 23 ++++++++++++++++++-----
+ src/utils.h   |  3 ++-
+ 3 files changed, 22 insertions(+), 7 deletions(-)
+
+diff --git a/src/main.cpp b/src/main.cpp
+index b76d1bb3..593c71be 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -370,7 +370,8 @@ static std::optional<struct timespec> get_boottime()
+     kobj = std::get<1>(kdirs);
+ 
+     if (ksrc != "")
+-      extra_flags = get_kernel_cflags(utsname.machine, ksrc, kobj);
++      extra_flags = get_kernel_cflags(
++          utsname.machine, ksrc, kobj, bpftrace.kconfig);
+   }
+   extra_flags.push_back("-include");
+   extra_flags.push_back(CLANG_WORKAROUNDS_H);
+diff --git a/src/utils.cpp b/src/utils.cpp
+index 54c8f054..c8fd7da1 100644
+--- a/src/utils.cpp
++++ b/src/utils.cpp
+@@ -227,7 +227,6 @@ KConfig::KConfig()
+   }
+ }
+ 
+-
+ bool get_uint64_env_var(const std::string &str, uint64_t &dest)
+ {
+   if (const char* env_p = std::getenv(str.c_str()))
+@@ -364,10 +363,10 @@ std::vector<int> get_possible_cpus()
+   return read_cpu_range("/sys/devices/system/cpu/possible");
+ }
+ 
+-std::vector<std::string> get_kernel_cflags(
+-    const char* uname_machine,
+-    const std::string& ksrc,
+-    const std::string& kobj)
++std::vector<std::string> get_kernel_cflags(const char *uname_machine,
++                                           const std::string &ksrc,
++                                           const std::string &kobj,
++                                           const KConfig &kconfig)
+ {
+   std::vector<std::string> cflags;
+   std::string arch = uname_machine;
+@@ -433,6 +432,20 @@ std::vector<std::string> get_kernel_cflags(
+     cflags.push_back("-D__LINUX_ARM_ARCH__=7");
+   }
+ 
++  if (arch == "arm64")
++  {
++    // arm64 defines KASAN_SHADOW_SCALE_SHIFT in a Makefile instead of defining
++    // it in a header file. Since we're not executing make, we need to set the
++    // value manually (values are taken from arch/arm64/Makefile).
++    if (kconfig.has_value("CONFIG_KASAN", "y"))
++    {
++      if (kconfig.has_value("CONFIG_KASAN_SW_TAGS", "y"))
++        cflags.push_back("-DKASAN_SHADOW_SCALE_SHIFT=4");
++      else
++        cflags.push_back("-DKASAN_SHADOW_SCALE_SHIFT=3");
++    }
++  }
++
+   return cflags;
+ }
+ 
+diff --git a/src/utils.h b/src/utils.h
+index a76aa161..d4eeac3d 100644
+--- a/src/utils.h
++++ b/src/utils.h
+@@ -178,7 +178,8 @@ std::tuple<std::string, std::string> get_kernel_dirs(
+     bool unpack_kheaders);
+ std::vector<std::string> get_kernel_cflags(const char *uname_machine,
+                                            const std::string &ksrc,
+-                                           const std::string &kobj);
++                                           const std::string &kobj,
++                                           const KConfig &kconfig);
+ std::string get_cgroup_path_in_hierarchy(uint64_t cgroupid,
+                                          std::string base_path);
+ std::vector<std::pair<std::string, std::string>> get_cgroup_hierarchy_roots();
+-- 
+2.39.2
+

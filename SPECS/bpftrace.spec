@@ -1,5 +1,5 @@
 Name:           bpftrace
-Version:        0.16.0
+Version:        0.17.0
 Release:        2%{?dist}
 Summary:        High-level tracing language for Linux eBPF
 License:        ASL 2.0
@@ -13,8 +13,11 @@ Source0:        %{url}/archive/v%{version}/%{name}-%{version}.tar.gz
 # for build.
 Source1:        https://github.com/USCiLab/cereal/archive/v%{cereal_version}/cereal-%{cereal_version}.tar.gz
 
-Patch0:         %{name}-%{version}-IR-builder-get-rid-of-getPointerElementType-calls.patch
-Patch1:         %{name}-%{version}-tcpdrop-Fix-ERROR-Error-attaching-probe-kprobe-tcp_d.patch
+Patch0:         %{name}-%{version}-0001-Parse-kernel-configuration.patch
+Patch1:         %{name}-%{version}-0002-arm64-define-the-KASAN_SHADOW_SCALE_SHIFT-macro.patch
+Patch2:         %{name}-%{version}-0003-ast-Use-std-optional-in-CodegenLLVM-CodegenLLVM-call.patch
+Patch3:         %{name}-%{version}-0004-Set-cmake-policy-for-CMP0057.patch
+Patch4:         %{name}-%{version}-0005-cmake-Raise-max-llvm-major-version-to-16.patch
 
 Patch10:        %{name}-%{version}-RHEL-aarch64-fixes-statsnoop-and-opensnoop.patch
 
@@ -60,6 +63,7 @@ CPATH=$PWD/cereal-%{cereal_version}/include:$CPATH
 export CPATH
 %cmake . \
         -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+        -DUSE_SYSTEM_BPF_BCC=ON \
         -DBUILD_TESTING:BOOL=OFF \
         -DBUILD_SHARED_LIBS:BOOL=OFF
 %cmake_build
@@ -95,6 +99,13 @@ find %{buildroot}%{_datadir}/%{name}/tools -type f -exec \
 %exclude %{_datadir}/%{name}/tools/old
 
 %changelog
+* Mon May 15 2023 Viktor Malik <vmalik@redhat.com> - 0.17.0-2
+- Rebuild for LLVM 16 (rhbz#2192953)
+
+* Tue Mar 14 2023 Viktor Malik <vmalik@redhat.com> - 0.17.0-1
+- Rebase on bpftrace 0.17.0 (RHEL-286)
+- Fix runqlat.bt, tcpdrop.bt, and undump.bt on aarch64 (rhbz#2170838)
+
 * Tue Jan 03 2023 Viktor Malik <vmalik@redhat.com> - 0.16.0-2
 - Fix missing kprobe attachpoints for bio* tools (s390x, ppc64le)
 - Rebuild for libbpf 1.0.0
