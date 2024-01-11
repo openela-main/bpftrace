@@ -2,7 +2,7 @@
 
 Name:           bpftrace
 Version:        0.16.0
-Release:        1%{?dist}
+Release:        4%{?dist}
 Summary:        High-level tracing language for Linux eBPF
 License:        ASL 2.0
 
@@ -19,6 +19,7 @@ Patch0:         %{name}-%{version}-IR-builder-get-rid-of-getPointerElementType-c
 Patch1:         %{name}-%{version}-tools-old-mdflush.bt-fix-BPFTRACE_HAVE_BTF-macro.patch
 Patch2:         %{name}-%{version}-tcpdrop-Fix-ERROR-Error-attaching-probe-kprobe-tcp_d.patch
 Patch3:         %{name}-%{version}-RHEL8-remove-not-existing-attachpoints-from-tools.patch
+Patch4:         %{name}-%{version}-cmake-Raise-max-llvm-major-version-to-16.patch
 Patch10:        %{name}-%{version}-RHEL-8-aarch64-fixes-statsnoop-and-opensnoop.patch
 
 # Arches will be included as upstream support is added and dependencies are
@@ -110,6 +111,14 @@ cp %{buildroot}/%{_datadir}/%{name}/tools/old/mdflush.bt %{buildroot}/%{_datadir
 %exclude %{_datadir}/%{name}/tools/old
 
 %changelog
+* Fri Jun 09 2023 Viktor Malik <vmalik@redhat.com> - 0.16.0-3
+- Add forgotten patch raising LLVM version in CMake
+- Resolves: rhbz#2192950
+
+* Fri Jun 09 2023 Viktor Malik <vmalik@redhat.com> - 0.16.0-2
+- Rebuild for LLVM16
+- Resolves: rhbz#2192950
+
 * Wed Nov 30 2022 Viktor Malik <vmalik@redhat.com> - 0.16.0-1
 - Rebase on bpftrace 0.16.0
 - Rebuild for LLVM15
