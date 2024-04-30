@@ -1,7 +1,7 @@
-From b23980e4f6ed33d98f4f09ef25ae17baca215cce Mon Sep 17 00:00:00 2001
+From 8066a715dbd54e6cbfa66176544944a2df7952a6 Mon Sep 17 00:00:00 2001
 From: Jerome Marchand <jmarchan@redhat.com>
 Date: Thu, 11 Jun 2020 14:56:36 +0200
-Subject: [PATCH 6/6] RHEL: aarch64: fixes statsnoop and opensnoop
+Subject: [PATCH] RHEL: aarch64: fixes statsnoop and opensnoop
 
 On aarch64 the open syscall has been dropped. Only openat remains,
 wich is called by libc open() function.
@@ -20,7 +20,7 @@ Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
  2 files changed, 2 insertions(+), 8 deletions(-)
 
 diff --git a/tools/opensnoop.bt b/tools/opensnoop.bt
-index a7de8026..d99db93e 100755
+index bbb26419..95185e5f 100755
 --- a/tools/opensnoop.bt
 +++ b/tools/opensnoop.bt
 @@ -21,13 +21,11 @@ BEGIN
@@ -30,7 +30,7 @@ index a7de8026..d99db93e 100755
 -tracepoint:syscalls:sys_enter_open,
  tracepoint:syscalls:sys_enter_openat
  {
- 	@filename[tid] = args->filename;
+ 	@filename[tid] = args.filename;
  }
  
 -tracepoint:syscalls:sys_exit_open,
@@ -38,11 +38,11 @@ index a7de8026..d99db93e 100755
  /@filename[tid]/
  {
 diff --git a/tools/statsnoop.bt b/tools/statsnoop.bt
-index b2d529e2..f612ea94 100755
+index a76b2bcc..89c2c8ea 100755
 --- a/tools/statsnoop.bt
 +++ b/tools/statsnoop.bt
 @@ -30,17 +30,13 @@ tracepoint:syscalls:sys_enter_statfs
- 	@filename[tid] = args->pathname;
+ 	@filename[tid] = args.pathname;
  }
  
 -tracepoint:syscalls:sys_enter_statx,
@@ -50,7 +50,7 @@ index b2d529e2..f612ea94 100755
 -tracepoint:syscalls:sys_enter_newlstat
 +tracepoint:syscalls:sys_enter_statx
  {
- 	@filename[tid] = args->filename;
+ 	@filename[tid] = args.filename;
  }
  
  tracepoint:syscalls:sys_exit_statfs,
@@ -60,7 +60,7 @@ index b2d529e2..f612ea94 100755
 +tracepoint:syscalls:sys_exit_statx
  /@filename[tid]/
  {
- 	$ret = args->ret;
+ 	$ret = args.ret;
 -- 
-2.35.3
+2.41.0
 

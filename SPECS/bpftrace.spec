@@ -1,6 +1,6 @@
 Name:           bpftrace
-Version:        0.17.0
-Release:        2%{?dist}
+Version:        0.19.1
+Release:        1%{?dist}
 Summary:        High-level tracing language for Linux eBPF
 License:        ASL 2.0
 
@@ -12,12 +12,6 @@ Source0:        %{url}/archive/v%{version}/%{name}-%{version}.tar.gz
 # RHEL9, so we download it manually. This is ok to do as it is only necessary
 # for build.
 Source1:        https://github.com/USCiLab/cereal/archive/v%{cereal_version}/cereal-%{cereal_version}.tar.gz
-
-Patch0:         %{name}-%{version}-0001-Parse-kernel-configuration.patch
-Patch1:         %{name}-%{version}-0002-arm64-define-the-KASAN_SHADOW_SCALE_SHIFT-macro.patch
-Patch2:         %{name}-%{version}-0003-ast-Use-std-optional-in-CodegenLLVM-CodegenLLVM-call.patch
-Patch3:         %{name}-%{version}-0004-Set-cmake-policy-for-CMP0057.patch
-Patch4:         %{name}-%{version}-0005-cmake-Raise-max-llvm-major-version-to-16.patch
 
 Patch10:        %{name}-%{version}-RHEL-aarch64-fixes-statsnoop-and-opensnoop.patch
 
@@ -99,6 +93,11 @@ find %{buildroot}%{_datadir}/%{name}/tools -type f -exec \
 %exclude %{_datadir}/%{name}/tools/old
 
 %changelog
+* Mon Nov 06 2023 Viktor Malik <vmalik@redhat.com> - 0.19.1-1
+- Rebase on bpftrace 0.19.1 (RHEL-10693)
+- Rebuild for LLVM 17 (RHEL-10592)
+- Enhancements and fixes for PowerPC (RHEL-3690, RHEL-11476)
+
 * Mon May 15 2023 Viktor Malik <vmalik@redhat.com> - 0.17.0-2
 - Rebuild for LLVM 16 (rhbz#2192953)
 
