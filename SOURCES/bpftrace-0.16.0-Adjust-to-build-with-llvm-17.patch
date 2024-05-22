@@ -1,0 +1,90 @@
+From 45f0302773923accd7cc324d839b733c27c92f38 Mon Sep 17 00:00:00 2001
+From: Khem Raj <raj.khem@gmail.com>
+Date: Thu, 6 Jul 2023 08:59:41 -0700
+Subject: [PATCH] Adjust to build with llvm 17
+
+- PassManagerBuilder has been removed
+- itaniumDemangle() API signature has changed
+- update MAX_LLVM_MAJOR in CMakeLists.txt
+- update bcc and libbpf submodules to their latest versions to allow
+  building bcc with llvm 17
+- replaced JITEvaluatedSymbol by ExecutorSymbolDef in ORC
+
+Signed-off-by: Khem Raj <raj.khem@gmail.com>
+Signed-off-by: Viktor Malik <viktor.malik@gmail.com>
+---
+ CMakeLists.txt                         | 2 +-
+ src/ast/bpforc/bpforc.h                | 2 +-
+ src/ast/passes/codegen_llvm.cpp        | 4 ++++
+ src/cxxdemangler/cxxdemangler_llvm.cpp | 4 ++++
+ 4 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 433153be..a11a5c36 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -169,7 +169,7 @@ else()
+   endif()
+ 
+   set(MIN_LLVM_MAJOR 6)
+-  set(MAX_LLVM_MAJOR 16)
++  set(MAX_LLVM_MAJOR 17)
+ 
+   if((${LLVM_VERSION_MAJOR} VERSION_LESS ${MIN_LLVM_MAJOR}) OR (${LLVM_VERSION_MAJOR} VERSION_GREATER ${MAX_LLVM_MAJOR}))
+     message(SEND_ERROR "Unsupported LLVM version found via ${LLVM_INCLUDE_DIRS}: ${LLVM_VERSION_MAJOR}")
+diff --git a/src/ast/bpforc/bpforc.h b/src/ast/bpforc/bpforc.h
+index 58914419..8d2f1e63 100644
+--- a/src/ast/bpforc/bpforc.h
++++ b/src/ast/bpforc/bpforc.h
+@@ -157,7 +157,7 @@ public:
+   }
+ 
+ #ifdef LLVM_ORC_V2
+-  Expected<JITEvaluatedSymbol> lookup(StringRef Name)
++  Expected<ExecutorSymbolDef> lookup(StringRef Name)
+   {
+     return ES->lookup({ &MainJD }, Mangle(Name.str()));
+   }
+diff --git a/src/ast/passes/codegen_llvm.cpp b/src/ast/passes/codegen_llvm.cpp
+index 2b888087..a75a0fd1 100644
+--- a/src/ast/passes/codegen_llvm.cpp
++++ b/src/ast/passes/codegen_llvm.cpp
+@@ -7,7 +7,9 @@
+ #include <ctime>
+ #include <fstream>
+ 
++#if LLVM_VERSION_MAJOR <= 16
+ #include <llvm-c/Transforms/IPO.h>
++#endif
+ #include <llvm/IR/Constants.h>
+ #include <llvm/IR/LLVMContext.h>
+ #include <llvm/IR/LegacyPassManager.h>
+@@ -17,7 +19,9 @@
+ #include <llvm/Passes/PassBuilder.h>
+ #endif
+ #include <llvm/Transforms/IPO.h>
++#if LLVM_VERSION_MAJOR <= 16
+ #include <llvm/Transforms/IPO/PassManagerBuilder.h>
++#endif
+ 
+ #include "arch/arch.h"
+ #include "ast.h"
+diff --git a/src/cxxdemangler/cxxdemangler_llvm.cpp b/src/cxxdemangler/cxxdemangler_llvm.cpp
+index e9a9db24..1b0bf7ea 100644
+--- a/src/cxxdemangler/cxxdemangler_llvm.cpp
++++ b/src/cxxdemangler/cxxdemangler_llvm.cpp
+@@ -6,7 +6,11 @@ namespace bpftrace {
+ 
+ char* cxxdemangle(const char* mangled)
+ {
++#if LLVM_VERSION_MAJOR <= 16
+   return llvm::itaniumDemangle(mangled, nullptr, nullptr, nullptr);
++#else
++  return llvm::itaniumDemangle(mangled);
++#endif
+ }
+ 
+ } // namespace bpftrace
+-- 
+2.41.0
+
