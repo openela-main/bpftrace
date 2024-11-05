@@ -2,7 +2,7 @@
 
 Name:           bpftrace
 Version:        0.16.0
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        High-level tracing language for Linux eBPF
 License:        ASL 2.0
 
@@ -21,6 +21,8 @@ Patch2:         %{name}-%{version}-tcpdrop-Fix-ERROR-Error-attaching-probe-kprob
 Patch3:         %{name}-%{version}-RHEL8-remove-not-existing-attachpoints-from-tools.patch
 Patch4:         %{name}-%{version}-cmake-Raise-max-llvm-major-version-to-16.patch
 Patch5:         %{name}-%{version}-Adjust-to-build-with-llvm-17.patch
+Patch6:         %{name}-%{version}-Fix-security-hole-checking-unpacked-kernel-headers-3.patch
+Patch7:         %{name}-%{version}-Don-t-unpack-kernel-headers-or-look-in-tmp-3156.patch
 Patch10:        %{name}-%{version}-RHEL-8-aarch64-fixes-statsnoop-and-opensnoop.patch
 
 # Arches will be included as upstream support is added and dependencies are
@@ -112,6 +114,10 @@ cp %{buildroot}/%{_datadir}/%{name}/tools/old/mdflush.bt %{buildroot}/%{_datadir
 %exclude %{_datadir}/%{name}/tools/old
 
 %changelog
+* Thu May 30 2024 Viktor Malik <vmalik@redhat.com> - 0.16.0-6
+- Fix security hole checking unpacked kernel headers (CVE-2024-2313)
+- Resolves: RHEL-28764
+
 * Mon Nov 06 2023  - 0.16.0-5
 - Rebuild for LLVM17
 - Resolves: RHEL-10690
