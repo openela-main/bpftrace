@@ -1,5 +1,5 @@
 Name:           bpftrace
-Version:        0.19.1
+Version:        0.21.1
 Release:        1%{?dist}
 Summary:        High-level tracing language for Linux eBPF
 License:        ASL 2.0
@@ -31,6 +31,7 @@ BuildRequires:  bcc-devel >= 0.19.0-8
 BuildRequires:  libbpf-devel
 BuildRequires:  libbpf-static
 BuildRequires:  binutils-devel
+BuildRequires:  lldb-devel
 
 
 %description
@@ -93,6 +94,27 @@ find %{buildroot}%{_datadir}/%{name}/tools -type f -exec \
 %exclude %{_datadir}/%{name}/tools/old
 
 %changelog
+* Thu Jun 27 2024 Viktor Malik <vmalik@redhat.com> - 0.21.1-1
+- Rebase on bpftrace 0.21.1
+- Add LLVM 18 support (RHEL-28685)
+
+* Thu May 30 2024 Viktor Malik <vmalik@redhat.com> - 0.20.4-3
+- Fix latest build (not built in side tag)
+
+* Thu May 30 2024 Viktor Malik <vmalik@redhat.com> - 0.20.4-2
+- Rebuild for bcc 0.30.0-4
+
+* Thu May 30 2024 Viktor Malik <vmalik@redhat.com> - 0.20.4-1
+- Rebase on bpftrace 0.20.4
+- Fix CVE allowing unprivileged users loading of compromised linux headers
+  (RHEL-28765, CVE-2024-2313)
+
+* Fri May 03 2024 Viktor Malik <vmalik@redhat.com>  - 0.20.3-1
+- Rebase on bpftrace 0.20.3 (RHEL-30779)
+- Fix CVE allowing unprivileged users loading of compromised linux headers
+  (RHEL-28765, CVE-2024-2313)
+- Fix bpftrace creating BPF programs with truncated names (RHEL-8502)
+
 * Mon Nov 06 2023 Viktor Malik <vmalik@redhat.com> - 0.19.1-1
 - Rebase on bpftrace 0.19.1 (RHEL-10693)
 - Rebuild for LLVM 17 (RHEL-10592)

@@ -1,4 +1,4 @@
-From 8066a715dbd54e6cbfa66176544944a2df7952a6 Mon Sep 17 00:00:00 2001
+From cae27a1842c038bb59fb8e3ee48018d0e69f2a3c Mon Sep 17 00:00:00 2001
 From: Jerome Marchand <jmarchan@redhat.com>
 Date: Thu, 11 Jun 2020 14:56:36 +0200
 Subject: [PATCH] RHEL: aarch64: fixes statsnoop and opensnoop
@@ -62,5 +62,5 @@ index a76b2bcc..89c2c8ea 100755
  {
  	$ret = args.ret;
 -- 
-2.41.0
+2.45.0
 
