@@ -1,5 +1,5 @@
 Name:           bpftrace
-Version:        0.21.1
+Version:        0.22.1
 Release:        1%{?dist}
 Summary:        High-level tracing language for Linux eBPF
 License:        ASL 2.0
@@ -94,6 +94,10 @@ find %{buildroot}%{_datadir}/%{name}/tools -type f -exec \
 %exclude %{_datadir}/%{name}/tools/old
 
 %changelog
+* Wed Jan 29 2025 Viktor Malik <vmalik@redhat.com> - 0.22.1-1
+- Rebase on bpftrace 0.22.1 (RHEL-63881)
+- Add LLVM 19 support (RHEL-66061)
+
 * Thu Jun 27 2024 Viktor Malik <vmalik@redhat.com> - 0.21.1-1
 - Rebase on bpftrace 0.21.1
 - Add LLVM 18 support (RHEL-28685)
