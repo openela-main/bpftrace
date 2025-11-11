@@ -1,5 +1,5 @@
 Name:           bpftrace
-Version:        0.22.1
+Version:        0.23.5
 Release:        1%{?dist}
 Summary:        High-level tracing language for Linux eBPF
 License:        ASL 2.0
@@ -13,6 +13,8 @@ Source0:        %{url}/archive/v%{version}/%{name}-%{version}.tar.gz
 # for build.
 Source1:        https://github.com/USCiLab/cereal/archive/v%{cereal_version}/cereal-%{cereal_version}.tar.gz
 
+Patch0:         %{name}-%{version}-Remove-cstring_view.patch
+Patch1:         %{name}-%{version}-runqlen.bt-Use-old-version-of-the-tool.patch
 Patch10:        %{name}-%{version}-RHEL-aarch64-fixes-statsnoop-and-opensnoop.patch
 
 # Arches will be included as upstream support is added and dependencies are
@@ -49,7 +51,7 @@ and predecessor tracers such as DTrace and SystemTap
 %autopatch -p1 -M 9
 
 %ifarch aarch64
-%patch10 -p1
+%patch -P 10 -p1
 %endif
 
 %build
@@ -88,12 +90,17 @@ find %{buildroot}%{_datadir}/%{name}/tools -type f -exec \
 %{_bindir}/%{name}
 %{_bindir}/%{name}-aotrt
 %{_mandir}/man8/*
+%{_datadir}/bash-completion/completions/%{name}
 %attr(0755,-,-) %{_datadir}/%{name}/tools/*.bt
 %{_datadir}/%{name}/tools/doc/*.txt
 # Do not include old versions of tools, they do not work on RHEL 9
 %exclude %{_datadir}/%{name}/tools/old
 
 %changelog
+* Fri Jun 06 2025 Viktor Malik <vmalik@redhat.com> - 0.23.5-1
+- Rebase on bpftrace 0.23.5 (RHEL-78918)
+- Add LLVM 20 support (RHEL-81775)
+
 * Wed Jan 29 2025 Viktor Malik <vmalik@redhat.com> - 0.22.1-1
 - Rebase on bpftrace 0.22.1 (RHEL-63881)
 - Add LLVM 19 support (RHEL-66061)
