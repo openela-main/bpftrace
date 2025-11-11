@@ -1,5 +1,5 @@
 Name:           bpftrace
-Version:        0.22.1
+Version:        0.23.5
 Release:        1%{?dist}
 Summary:        High-level tracing language for Linux eBPF
 License:        Apache-2.0
@@ -11,7 +11,7 @@ Patch10:        %{name}-%{version}-RHEL-aarch64-fixes-statsnoop-and-opensnoop.pa
 
 # Arches will be included as upstream support is added and dependencies are
 # satisfied in the respective arches
-ExclusiveArch:  x86_64 %{power64} aarch64 s390x
+ExclusiveArch:  x86_64 %{power64} aarch64 s390x riscv64
 
 BuildRequires:  gcc-c++
 BuildRequires:  bison
@@ -76,6 +76,7 @@ find %{buildroot}%{_datadir}/%{name}/tools -type f -exec \
 %{_bindir}/%{name}
 %{_bindir}/%{name}-aotrt
 %{_mandir}/man8/*
+%{bash_completions_dir}/%{name}
 %attr(0755,-,-) %{_datadir}/%{name}/tools/*.bt
 %{_datadir}/%{name}/tools/doc/*.txt
 # Do not include old versions of tools, they do not work on RHEL 10
@@ -83,6 +84,17 @@ find %{buildroot}%{_datadir}/%{name}/tools -type f -exec \
 
 
 %changelog
+* Mon Jun 16 2025 Viktor Malik <vmalik@redhat.com> - 0.23.5-1
+- Rebase to upstream version 0.23.5 which fixes an issue with kstack/ustack on
+  s390x (RHEL-96958)
+
+* Thu May 22 2025 Viktor Malik <vmalik@redhat.com> - 0.23.2-1
+- Rebase to upstream version 0.23.2 (RHEL-78919)
+- Rebuild for LLVM 20 (RHEL-81774)
+
+* Thu Feb 13 2025 David Abdurachmanov <davidlt@rivosinc.com> - 0.22.1-2
+- Enable riscv64
+
 * Thu Jan 16 2025 Viktor Malik <vmalik@redhat.com> - 0.22.1-1
 - Rebase to upstream version 0.22.1 (RHEL-63882)
 
