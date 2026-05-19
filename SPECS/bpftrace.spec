@@ -1,5 +1,5 @@
 Name:           bpftrace
-Version:        0.23.5
+Version:        0.24.2
 Release:        1%{?dist}
 Summary:        High-level tracing language for Linux eBPF
 License:        Apache-2.0
@@ -17,6 +17,7 @@ BuildRequires:  gcc-c++
 BuildRequires:  bison
 BuildRequires:  flex
 BuildRequires:  cmake
+BuildRequires:  elfutils-devel
 BuildRequires:  elfutils-libelf-devel
 BuildRequires:  zlib-devel
 BuildRequires:  llvm-devel
@@ -26,8 +27,8 @@ BuildRequires:  libbpf-devel
 BuildRequires:  libbpf-static
 BuildRequires:  binutils-devel
 BuildRequires:  cereal-devel
-BuildRequires:  lldb-devel
 BuildRequires:  rubygem-asciidoctor
+BuildRequires:  xxd
 
 
 %description
@@ -48,17 +49,10 @@ and predecessor tracers such as DTrace and SystemTap
 %cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo \
        -DBUILD_TESTING:BOOL=OFF \
        -DBUILD_SHARED_LIBS:BOOL=OFF \
-       -DUSE_SYSTEM_BPF_BCC:BOOL=ON
 %cmake_build
 
 
 %install
-# The post hooks strip the binary which removes
-# the BEGIN_trigger and END_trigger functions
-# which are needed for the BEGIN and END probes
-%global __os_install_post %{nil}
-%global _find_debuginfo_opts -g
-
 %cmake_install
 
 # Fix shebangs (https://fedoraproject.org/wiki/Packaging:Guidelines#Shebang_lines)
@@ -72,18 +66,26 @@ find %{buildroot}%{_datadir}/%{name}/tools -type f -exec \
 %license LICENSE
 %dir %{_datadir}/%{name}
 %dir %{_datadir}/%{name}/tools
-%dir %{_datadir}/%{name}/tools/doc
 %{_bindir}/%{name}
 %{_bindir}/%{name}-aotrt
 %{_mandir}/man8/*
 %{bash_completions_dir}/%{name}
 %attr(0755,-,-) %{_datadir}/%{name}/tools/*.bt
-%{_datadir}/%{name}/tools/doc/*.txt
 # Do not include old versions of tools, they do not work on RHEL 10
 %exclude %{_datadir}/%{name}/tools/old
+# biolatency-kp.bt attaches to kprobes which are inlined on RHEL 9.
+# In addition, biolatency.bt does the same thing (with tracepoints).
+%exclude %{_datadir}/%{name}/tools/biolatency-kp.bt
 
 
 %changelog
+* Tue Jan 13 2026 Viktor Malik <vmalik@redhat.com> - 0.24.2-1
+- Rebuild with LLVM 21 (RHEL-108334)
+- Rebase to upstream version 0.24.2
+
+* Thu Oct 23 2025 Viktor Malik <vmalik@redhat.com> - 0.24.1-1
+- Rebase to upstream version 0.24.1 (RHEL-79000)
+
 * Mon Jun 16 2025 Viktor Malik <vmalik@redhat.com> - 0.23.5-1
 - Rebase to upstream version 0.23.5 which fixes an issue with kstack/ustack on
   s390x (RHEL-96958)
