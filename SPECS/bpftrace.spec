@@ -1,5 +1,5 @@
 Name:           bpftrace
-Version:        0.23.5
+Version:        0.24.2
 Release:        1%{?dist}
 Summary:        High-level tracing language for Linux eBPF
 License:        ASL 2.0
@@ -13,8 +13,7 @@ Source0:        %{url}/archive/v%{version}/%{name}-%{version}.tar.gz
 # for build.
 Source1:        https://github.com/USCiLab/cereal/archive/v%{cereal_version}/cereal-%{cereal_version}.tar.gz
 
-Patch0:         %{name}-%{version}-Remove-cstring_view.patch
-Patch1:         %{name}-%{version}-runqlen.bt-Use-old-version-of-the-tool.patch
+Patch0:         %{name}-%{version}-runqlen.bt-Use-old-version-of-the-tool.patch
 Patch10:        %{name}-%{version}-RHEL-aarch64-fixes-statsnoop-and-opensnoop.patch
 
 # Arches will be included as upstream support is added and dependencies are
@@ -25,6 +24,7 @@ BuildRequires:  gcc-c++
 BuildRequires:  bison
 BuildRequires:  flex
 BuildRequires:  cmake
+BuildRequires:  elfutils-devel
 BuildRequires:  elfutils-libelf-devel
 BuildRequires:  zlib-devel
 BuildRequires:  llvm-devel
@@ -33,7 +33,8 @@ BuildRequires:  bcc-devel >= 0.19.0-8
 BuildRequires:  libbpf-devel
 BuildRequires:  libbpf-static
 BuildRequires:  binutils-devel
-BuildRequires:  lldb-devel
+# vim-common contains xxd
+BuildRequires:  vim-common
 
 
 %description
@@ -60,19 +61,12 @@ CPATH=$PWD/cereal-%{cereal_version}/include:$CPATH
 export CPATH
 %cmake . \
         -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-        -DUSE_SYSTEM_BPF_BCC=ON \
         -DBUILD_TESTING:BOOL=OFF \
         -DBUILD_SHARED_LIBS:BOOL=OFF
 %cmake_build
 
 
 %install
-# The post hooks strip the binary which removes
-# the BEGIN_trigger and END_trigger functions
-# which are needed for the BEGIN and END probes
-%global __os_install_post %{nil}
-%global _find_debuginfo_opts -g
-
 %cmake_install
 
 # Fix shebangs (https://fedoraproject.org/wiki/Packaging:Guidelines#Shebang_lines)
@@ -86,17 +80,27 @@ find %{buildroot}%{_datadir}/%{name}/tools -type f -exec \
 %license LICENSE
 %dir %{_datadir}/%{name}
 %dir %{_datadir}/%{name}/tools
-%dir %{_datadir}/%{name}/tools/doc
 %{_bindir}/%{name}
 %{_bindir}/%{name}-aotrt
 %{_mandir}/man8/*
 %{_datadir}/bash-completion/completions/%{name}
 %attr(0755,-,-) %{_datadir}/%{name}/tools/*.bt
-%{_datadir}/%{name}/tools/doc/*.txt
 # Do not include old versions of tools, they do not work on RHEL 9
 %exclude %{_datadir}/%{name}/tools/old
+# biolatency-kp.bt attaches to kprobes which are inlined on RHEL 9.
+# In addition, biolatency.bt does the same thing (with traecpoints).
+%exclude %{_datadir}/%{name}/tools/biolatency-kp.bt
 
 %changelog
+* Tue Jan 13 2026 Viktor Malik <vmalik@redhat.com> - 0.24.2-1
+- Rebase on bpftrace 0.24.2 (RHEL-140903)
+
+* Mon Dec 01 2025 Viktor Malik <vmalik@redhat.com> - 0.24.1-2
+- Rebuild with LLVM 21 (RHEL-108345)
+
+* Mon Oct 06 2025 Viktor Malik <vmalik@redhat.com> - 0.24.1-1
+- Rebase on bpftrace 0.24.1 (RHEL-78998)
+
 * Fri Jun 06 2025 Viktor Malik <vmalik@redhat.com> - 0.23.5-1
 - Rebase on bpftrace 0.23.5 (RHEL-78918)
 - Add LLVM 20 support (RHEL-81775)

@@ -1,4 +1,4 @@
-From 2f1573fe27de4008faedd38ee9cdadc3eec31909 Mon Sep 17 00:00:00 2001
+From b5e6a5f7fbcdf49fd19aafd519e04978f04a5aa7 Mon Sep 17 00:00:00 2001
 From: Viktor Malik <viktor.malik@gmail.com>
 Date: Fri, 6 Jun 2025 07:54:19 +0200
 Subject: [PATCH] runqlen.bt: Use old version of the tool
@@ -8,17 +8,17 @@ into nr_queued") so we need to use the old name of the struct fields.
 
 Signed-off-by: Viktor Malik <viktor.malik@gmail.com>
 ---
- tools/old/runqlen.bt | 41 -----------------------------------------
+ tools/old/runqlen.bt | 40 ----------------------------------------
  tools/runqlen.bt     |  8 +++++---
- 2 files changed, 5 insertions(+), 44 deletions(-)
+ 2 files changed, 5 insertions(+), 43 deletions(-)
  delete mode 100755 tools/old/runqlen.bt
 
 diff --git a/tools/old/runqlen.bt b/tools/old/runqlen.bt
 deleted file mode 100755
-index 23a7fb85..00000000
+index 82627c7d..00000000
 --- a/tools/old/runqlen.bt
 +++ /dev/null
-@@ -1,41 +0,0 @@
+@@ -1,40 +0,0 @@
 -#!/usr/bin/env bpftrace
 -/*
 - * runqlen.bt	CPU scheduler run queue length as a histogram.
@@ -29,7 +29,6 @@ index 23a7fb85..00000000
 - * For Linux < 6.14.
 - *
 - * Copyright 2018 Netflix, Inc.
-- * Licensed under the Apache License, Version 2.0 (the "License")
 - *
 - * 07-Oct-2018	Brendan Gregg	Created this.
 - */
@@ -61,19 +60,19 @@ index 23a7fb85..00000000
 -	@runqlen = lhist($len, 0, 100, 1);
 -}
 diff --git a/tools/runqlen.bt b/tools/runqlen.bt
-index 394a7b3d..23a7fb85 100755
+index fb206d3c..a9fac9e1 100755
 --- a/tools/runqlen.bt
 +++ b/tools/runqlen.bt
-@@ -5,6 +5,8 @@
-  *
+@@ -23,6 +23,8 @@
   * This is a bpftrace version of the bcc tool of the same name.
+  * The bcc version provides options to customize the output.
   *
 + * For Linux < 6.14.
 + *
   * Copyright 2018 Netflix, Inc.
-  * Licensed under the Apache License, Version 2.0 (the "License")
   *
-@@ -19,8 +21,8 @@
+  * 07-Oct-2018	Brendan Gregg	Created this.
+@@ -36,8 +38,8 @@
  // your kernel version. It is from kernel/sched/sched.h:
  struct cfs_rq {
  	struct load_weight load;
@@ -84,7 +83,7 @@ index 394a7b3d..23a7fb85 100755
  };
  #endif
  
-@@ -33,7 +35,7 @@ profile:hz:99
+@@ -50,7 +52,7 @@ profile:hz:99
  {
  	$task = (struct task_struct *)curtask;
  	$my_q = (struct cfs_rq *)$task->se.cfs_rq;
@@ -94,5 +93,5 @@ index 394a7b3d..23a7fb85 100755
  	@runqlen = lhist($len, 0, 100, 1);
  }
 -- 
-2.49.0
+2.50.1
 
