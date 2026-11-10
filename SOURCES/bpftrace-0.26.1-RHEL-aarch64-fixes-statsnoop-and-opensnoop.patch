@@ -1,6 +1,6 @@
-From b36872e810f4f71280ef11c0cdf58344a473e706 Mon Sep 17 00:00:00 2001
-From: Jerome Marchand <jmarchan@redhat.com>
-Date: Thu, 11 Jun 2020 14:56:36 +0200
+From f9ca7f48ae44ac078158b732e2328873f126d325 Mon Sep 17 00:00:00 2001
+From: Gregory Bell <grbell@redhat.com>
+Date: Wed, 27 May 2026 15:45:08 -0400
 Subject: [PATCH] RHEL: aarch64: fixes statsnoop and opensnoop
 
 On aarch64 the open syscall has been dropped. Only openat and openat2
@@ -21,18 +21,19 @@ Signed-off-by: Viktor Malik <vmalik@redhat.com>
  2 files changed, 2 insertions(+), 8 deletions(-)
 
 diff --git a/tools/opensnoop.bt b/tools/opensnoop.bt
-index aafacd10..1e51197e 100755
+index b0cfc647..3faf202c 100644
 --- a/tools/opensnoop.bt
 +++ b/tools/opensnoop.bt
-@@ -49,14 +49,12 @@ BEGIN
- 	printf("%-6s %-16s %4s %3s %s\n", "PID", "COMM", "FD", "ERR", "PATH");
+@@ -62,7 +62,6 @@ BEGIN
+   printf(" %s\n", "PATH");
  }
  
 -tracepoint:syscalls:sys_enter_open,
  tracepoint:syscalls:sys_enter_openat,
  tracepoint:syscalls:sys_enter_openat2
  {
- 	@filename[tid] = args.filename;
+@@ -145,7 +144,6 @@ macro sys_exit(ret, @filename, @paths)
+   delete(@filename, tid);
  }
  
 -tracepoint:syscalls:sys_exit_open,
@@ -40,11 +41,11 @@ index aafacd10..1e51197e 100755
  tracepoint:syscalls:sys_exit_openat2
  /@filename[tid]/
 diff --git a/tools/statsnoop.bt b/tools/statsnoop.bt
-index ebab9744..48367151 100755
+index 8499cf70..d53f0b19 100644
 --- a/tools/statsnoop.bt
 +++ b/tools/statsnoop.bt
-@@ -77,17 +77,13 @@ tracepoint:syscalls:sys_enter_statfs
- 	@filename[tid] = args.pathname;
+@@ -79,17 +79,13 @@ tracepoint:syscalls:sys_enter_statfs
+   @filename[tid] = args.pathname;
  }
  
 -tracepoint:syscalls:sys_enter_statx,
@@ -52,7 +53,7 @@ index ebab9744..48367151 100755
 -tracepoint:syscalls:sys_enter_newlstat
 +tracepoint:syscalls:sys_enter_statx
  {
- 	@filename[tid] = args.filename;
+   @filename[tid] = args.filename;
  }
  
  tracepoint:syscalls:sys_exit_statfs,
@@ -62,7 +63,7 @@ index ebab9744..48367151 100755
 +tracepoint:syscalls:sys_exit_statx
  /@filename[tid]/
  {
- 	$ret = args.ret;
+   $ret = args.ret;
 -- 
-2.50.1
+2.52.0
 

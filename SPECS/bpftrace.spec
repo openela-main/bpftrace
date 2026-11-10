@@ -1,5 +1,5 @@
 Name:           bpftrace
-Version:        0.24.2
+Version:        0.26.1
 Release:        1%{?dist}
 Summary:        High-level tracing language for Linux eBPF
 License:        ASL 2.0
@@ -62,7 +62,8 @@ export CPATH
 %cmake . \
         -DCMAKE_BUILD_TYPE=RelWithDebInfo \
         -DBUILD_TESTING:BOOL=OFF \
-        -DBUILD_SHARED_LIBS:BOOL=OFF
+        -DBUILD_SHARED_LIBS:BOOL=OFF \
+        -DUSE_SYSTEM_LIBBPF:BOOL=ON \
 %cmake_build
 
 
@@ -75,7 +76,7 @@ find %{buildroot}%{_datadir}/%{name}/tools -type f -exec \
 
 
 %files
-%doc README.md CONTRIBUTING-TOOLS.md
+%doc README.md CONTRIBUTING.md
 %doc docs/reference_guide.md docs/tutorial_one_liners.md
 %license LICENSE
 %dir %{_datadir}/%{name}
@@ -92,6 +93,10 @@ find %{buildroot}%{_datadir}/%{name}/tools -type f -exec \
 %exclude %{_datadir}/%{name}/tools/biolatency-kp.bt
 
 %changelog
+* Wed May 27 2026 Gregory Bell <grbell@redhat.com> - 0.26.0-1
+- Rebase on bpftrace 0.26.1 (RHEL-162984)
+- Rebuild with LLVM 22 (RHEL-170957) 
+
 * Tue Jan 13 2026 Viktor Malik <vmalik@redhat.com> - 0.24.2-1
 - Rebase on bpftrace 0.24.2 (RHEL-140903)
 
