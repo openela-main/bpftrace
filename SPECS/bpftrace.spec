@@ -1,5 +1,5 @@
 Name:           bpftrace
-Version:        0.24.2
+Version:        0.26.1
 Release:        1%{?dist}
 Summary:        High-level tracing language for Linux eBPF
 License:        Apache-2.0
@@ -49,6 +49,7 @@ and predecessor tracers such as DTrace and SystemTap
 %cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo \
        -DBUILD_TESTING:BOOL=OFF \
        -DBUILD_SHARED_LIBS:BOOL=OFF \
+       -DUSE_SYSTEM_LIBBPF:BOOL=ON \
 %cmake_build
 
 
@@ -61,7 +62,7 @@ find %{buildroot}%{_datadir}/%{name}/tools -type f -exec \
 
 
 %files
-%doc README.md CONTRIBUTING-TOOLS.md
+%doc README.md CONTRIBUTING.md
 %doc man/adoc/bpftrace.adoc docs/tutorial_one_liners.md
 %license LICENSE
 %dir %{_datadir}/%{name}
@@ -79,6 +80,10 @@ find %{buildroot}%{_datadir}/%{name}/tools -type f -exec \
 
 
 %changelog
+* Tue May 26 2026 Gregory Bell <grbell@redhat.com> - 0.26.0-1
+- Rebuild with LLVM 22
+- Rebase to upstream version 0.26.1
+
 * Tue Jan 13 2026 Viktor Malik <vmalik@redhat.com> - 0.24.2-1
 - Rebuild with LLVM 21 (RHEL-108334)
 - Rebase to upstream version 0.24.2
